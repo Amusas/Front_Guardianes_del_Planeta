@@ -1,0 +1,11 @@
+{
+  "name": "Guardianes del Planeta",
+  "short_name": "Guardianes",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F2FBF5",
+  "theme_color": "#2D6A4F",
+  "description": "Aplicación móvil educativa y gamificada para niños",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}
