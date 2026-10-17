@@ -5,8 +5,14 @@ import '../../../../core/theme/app_colors.dart';
 /// uniendo todos los nodos de actividades con curvas suaves de Bézier y bordes de piedra.
 class WindingPathPainter extends CustomPainter {
   final List<Offset> nodePositions;
+  final Color? pathColor;
+  final Color? borderColor;
 
-  WindingPathPainter({required this.nodePositions});
+  WindingPathPainter({
+    required this.nodePositions,
+    this.pathColor,
+    this.borderColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -33,9 +39,12 @@ class WindingPathPainter extends CustomPainter {
       );
     }
 
+    final Color effectiveBorder = borderColor ?? AppColors.pathBorder;
+    final Color effectivePath = pathColor ?? AppColors.pathSand;
+
     // 1. Sombra / Borde exterior del sendero
     final Paint borderPaint = Paint()
-      ..color = AppColors.pathBorder
+      ..color = effectiveBorder
       ..style = PaintingStyle.stroke
       ..strokeWidth = 36.0
       ..strokeCap = StrokeCap.round
@@ -43,27 +52,24 @@ class WindingPathPainter extends CustomPainter {
     canvas.drawPath(mainPath, borderPaint);
 
     // 2. Capa principal de tierra / arena clara
-    final Paint pathPaint = Paint()
-      ..color = AppColors.pathSand
+    final Paint paintPath = Paint()
+      ..color = effectivePath
       ..style = PaintingStyle.stroke
       ..strokeWidth = 28.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(mainPath, pathPaint);
-
-    // 3. Huellas o piedras centrales intermitentes para textura
-    final Paint stonesPaint = Paint()
-      ..color = AppColors.pathEarth
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0
-      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(mainPath, paintPath);
 
     for (final pos in nodePositions) {
-      canvas.drawCircle(Offset(pos.dx, pos.dy), 32, Paint()..color = AppColors.pathSand);
-      canvas.drawCircle(Offset(pos.dx, pos.dy), 34, Paint()
-        ..color = AppColors.pathBorder
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3);
+      canvas.drawCircle(pos, 38, Paint()..color = effectivePath);
+      canvas.drawCircle(
+        pos,
+        40,
+        Paint()
+          ..color = effectiveBorder
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.5,
+      );
     }
   }
 

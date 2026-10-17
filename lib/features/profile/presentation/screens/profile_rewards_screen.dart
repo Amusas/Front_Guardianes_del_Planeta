@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../domain/models/badge_model.dart';
 import '../../data/badges_mock_data.dart';
+import '../controllers/child_profile_controller.dart';
+import '../../../exploration/presentation/controllers/lesson_controller.dart';
 import '../widgets/badge_card.dart';
 import '../widgets/badge_detail_modal.dart';
+import '../../domain/models/avatar_config.dart';
+import '../widgets/child_avatar_widget.dart';
+import '../widgets/avatar_customizer_modal.dart';
 
 class ProfileRewardsScreen extends StatefulWidget {
   final VoidCallback onBack;
@@ -22,7 +28,50 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
   BadgeModel? _selectedBadge;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          context.read<ChildProfileController>().loadProfile();
+        } catch (_) {}
+        try {
+          context.read<LessonController>().loadUserProgress();
+        } catch (_) {}
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    ChildProfileController? childProfile;
+    try {
+      childProfile = context.watch<ChildProfileController>();
+    } catch (_) {
+      childProfile = null;
+    }
+
+    LessonController? lessonController;
+    try {
+      lessonController = context.watch<LessonController>();
+    } catch (_) {
+      lessonController = null;
+    }
+
+    final totalXp = childProfile?.totalXp ?? 0;
+    final levelNumber = childProfile?.levelNumber ?? 1;
+    final levelName = childProfile?.levelName ?? 'Semilla Guardiana';
+    final nextLevelXp = childProfile?.nextLevelRequiredXp ?? 500;
+    final progressRatio = childProfile?.levelProgressRatio ?? 0.0;
+    final percentageText = '${(progressRatio * 100).toInt()}%';
+    final completedLessonsCount = lessonController?.completedLessonIds.length ?? 0;
+
+    final List<BadgeModel> displayBadges = (childProfile?.badges != null && childProfile!.badges.isNotEmpty)
+        ? childProfile.badges
+        : _badges;
+    final int actualUnlockedCount = childProfile?.unlockedAchievementsCount ?? displayBadges.where((b) => b.isUnlocked).length;
+    final int totalAchievementsCount = childProfile?.totalAchievementsCount ?? displayBadges.length;
+
     return Scaffold(
       backgroundColor: AppColors.pastelGreenBg,
       body: Stack(
@@ -65,7 +114,7 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
 
                   const SizedBox(height: AppDimensions.space20),
 
-                  // 1. Avatar Grande con XP Progress Ring (65%)
+                  // 1. Avatar Grande con XP Progress Ring Real
                   Stack(
                     alignment: Alignment.center,
                     children: [
@@ -74,7 +123,7 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
                         width: 130,
                         height: 130,
                         child: CircularProgressIndicator(
-                          value: 0.65,
+                          value: progressRatio,
                           strokeWidth: 8.0,
                           backgroundColor: AppColors.lightGrey,
                           valueColor: const AlwaysStoppedAnimation<Color>(AppColors.gold),
@@ -82,28 +131,17 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
                         ),
                       ),
 
-                      // Avatar del niño
-                      Container(
-                        width: 104,
-                        height: 104,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [AppColors.emerald, AppColors.forestGreen],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          border: Border.all(color: AppColors.white, width: 4),
-                          boxShadow: AppShadows.card,
-                        ),
-                        child: const Icon(
-                          Icons.face_rounded,
-                          size: 68,
-                          color: AppColors.white,
+                      // Avatar personalizado del niño (interactivo)
+                      GestureDetector(
+                        onTap: () => _openAvatarCustomizer(context, childProfile),
+                        child: ChildAvatarWidget(
+                          config: childProfile?.avatarConfig ?? AvatarConfig.defaultConfig(),
+                          size: 104,
+                          borderWidth: 4,
                         ),
                       ),
 
-                      // Badge de porcentaje 65%
+                      // Badge de porcentaje real
                       Positioned(
                         bottom: 0,
                         child: Container(
@@ -114,9 +152,9 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
                             border: Border.all(color: AppColors.white, width: 2),
                             boxShadow: AppShadows.small,
                           ),
-                          child: const Text(
-                            '65%',
-                            style: TextStyle(
+                          child: Text(
+                            percentageText,
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
                               color: AppColors.darkText,
@@ -129,23 +167,25 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
 
                   const SizedBox(height: AppDimensions.space16),
 
-                  // Nivel y Título de aventurero
-                  const Text(
-                    'Nivel 5',
-                    style: TextStyle(
+                  // Nivel y Título de aventurero real
+                  Text(
+                    'Nivel $levelNumber',
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       color: AppColors.forestGreen,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  const Text(
-                    'Explorador Curioso',
+                  Text(
+                    levelName,
                     style: AppTypography.displayMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '1,250 / 2,000 XP para Nivel 6',
+                    levelNumber >= 6
+                        ? '$totalXp XP (Nivel Máximo)'
+                        : '$totalXp / $nextLevelXp XP para Nivel ${levelNumber + 1}',
                     style: AppTypography.caption.copyWith(
                       color: AppColors.darkGrey,
                       fontWeight: FontWeight.w700,
@@ -169,31 +209,31 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
                       'Personalizar avatar',
                       style: TextStyle(fontWeight: FontWeight.w800),
                     ),
-                    onPressed: () {},
+                    onPressed: () => _openAvatarCustomizer(context, childProfile),
                   ),
 
                   const SizedBox(height: AppDimensions.space24),
 
-                  // 2. Tres Tarjetas Pequeñas de Estadísticas (Números prominentes)
+                  // 2. Tres Tarjetas Pequeñas de Estadísticas Reales
                   Row(
                     children: [
                       _buildStatCard(
                         title: 'XP Total',
-                        value: '1,250',
+                        value: '$totalXp',
                         icon: Icons.star_rounded,
                         accentColor: AppColors.goldDark,
                       ),
                       const SizedBox(width: AppDimensions.space12),
                       _buildStatCard(
                         title: 'Lecciones',
-                        value: '24',
+                        value: '$completedLessonsCount',
                         icon: Icons.menu_book_rounded,
                         accentColor: AppColors.forestGreen,
                       ),
                       const SizedBox(width: AppDimensions.space12),
                       _buildStatCard(
                         title: 'Insignias',
-                        value: '8',
+                        value: '$actualUnlockedCount',
                         icon: Icons.military_tech_rounded,
                         accentColor: AppColors.emerald,
                       ),
@@ -216,9 +256,9 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
                           color: AppColors.emerald.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
                         ),
-                        child: const Text(
-                          '4 / 6 Obtenidas',
-                          style: TextStyle(
+                        child: Text(
+                          '$actualUnlockedCount / ${displayBadges.length} Obtenidas',
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             color: AppColors.forestGreenDark,
@@ -239,9 +279,9 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
                       mainAxisSpacing: 14,
                       childAspectRatio: 0.95,
                     ),
-                    itemCount: _badges.length,
+                    itemCount: displayBadges.length,
                     itemBuilder: (context, index) {
-                      final badge = _badges[index];
+                      final badge = displayBadges[index];
                       return BadgeCard(
                         badge: badge,
                         onTap: () {
@@ -318,6 +358,19 @@ class _ProfileRewardsScreenState extends State<ProfileRewardsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _openAvatarCustomizer(BuildContext context, ChildProfileController? controller) {
+    if (controller == null) return;
+    AvatarCustomizerModal.show(
+      context: context,
+      initialConfig: controller.avatarConfig,
+      childLevel: controller.levelNumber,
+      childName: controller.childName,
+      onSave: (newConfig) {
+        controller.updateAvatar(newConfig);
+      },
     );
   }
 }

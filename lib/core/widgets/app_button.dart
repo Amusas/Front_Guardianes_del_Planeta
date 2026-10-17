@@ -16,6 +16,7 @@ class AppButton extends StatefulWidget {
   final bool isLoading;
   final double? width;
   final double height;
+  final Color? customColor;
 
   const AppButton({
     super.key,
@@ -26,6 +27,7 @@ class AppButton extends StatefulWidget {
     this.isLoading = false,
     this.width,
     this.height = AppDimensions.buttonHeight,
+    this.customColor,
   });
 
   @override
@@ -56,6 +58,9 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
 
   Color _getBackgroundColor() {
     if (widget.onPressed == null) return AppColors.locked;
+    if (widget.customColor != null && widget.variant == AppButtonVariant.primary) {
+      return widget.customColor!;
+    }
     switch (widget.variant) {
       case AppButtonVariant.primary:
         return AppColors.forestGreen;

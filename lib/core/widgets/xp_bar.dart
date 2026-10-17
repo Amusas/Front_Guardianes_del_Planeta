@@ -3,6 +3,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_shadows.dart';
 import '../theme/app_typography.dart';
 import '../constants/app_dimensions.dart';
+import '../../features/profile/domain/models/avatar_config.dart';
+import '../../features/profile/presentation/widgets/child_avatar_widget.dart';
 
 /// Barra de XP gruesa, redondeada y visualmente atractiva con icono de estrella y progreso animado.
 class XpBarWidget extends StatelessWidget {
@@ -99,6 +101,7 @@ class FloatingGameHeader extends StatelessWidget {
   final int currentXp;
   final int targetXp;
   final VoidCallback? onProfileTap;
+  final AvatarConfig? avatarConfig;
 
   const FloatingGameHeader({
     super.key,
@@ -107,6 +110,7 @@ class FloatingGameHeader extends StatelessWidget {
     this.currentXp = 1250,
     this.targetXp = 2000,
     this.onProfileTap,
+    this.avatarConfig,
   });
 
   @override
@@ -130,24 +134,10 @@ class FloatingGameHeader extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.emerald, AppColors.forestGreen],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(color: AppColors.white, width: 2),
-                    boxShadow: AppShadows.small,
-                  ),
-                  child: const Icon(
-                    Icons.face_rounded,
-                    color: AppColors.white,
-                    size: 30,
-                  ),
+                ChildAvatarWidget(
+                  config: avatarConfig ?? AvatarConfig.defaultConfig(),
+                  size: 46,
+                  borderWidth: 2,
                 ),
                 // Badge de nivel superpuesto
                 Positioned(

@@ -1,0 +1,57 @@
+import '../../domain/entities/child_profile_entity.dart';
+
+class ChildProfileResponseModel {
+  final int id;
+  final int? userId;
+  final String name;
+  final DateTime? dateOfBirth;
+  final int? age;
+  final int totalXp;
+  final int? levelId;
+  final int streakCount;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  const ChildProfileResponseModel({
+    required this.id,
+    this.userId,
+    required this.name,
+    this.dateOfBirth,
+    this.age,
+    required this.totalXp,
+    this.levelId,
+    required this.streakCount,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory ChildProfileResponseModel.fromJson(Map<String, dynamic> json) {
+    return ChildProfileResponseModel(
+      id: (json['id'] as num).toInt(),
+      userId: (json['userId'] as num?)?.toInt(),
+      name: json['name'] as String? ?? 'Explorador',
+      dateOfBirth: json['dateOfBirth'] != null ? DateTime.tryParse(json['dateOfBirth'].toString()) : null,
+      age: (json['age'] as num?)?.toInt(),
+      totalXp: (json['totalXp'] as num?)?.toInt() ?? 0,
+      levelId: (json['levelId'] as num?)?.toInt(),
+      streakCount: (json['streakCount'] as num?)?.toInt() ?? 0,
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'].toString()) : null,
+    );
+  }
+
+  ChildProfileEntity toEntity() {
+    return ChildProfileEntity(
+      id: id,
+      userId: userId,
+      name: name,
+      dateOfBirth: dateOfBirth,
+      age: age,
+      totalXp: totalXp,
+      levelId: levelId,
+      streakCount: streakCount,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+}

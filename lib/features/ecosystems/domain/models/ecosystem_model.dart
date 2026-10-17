@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 
 class EcosystemModel {
   final String id;
+  final int? numericId;
   final String name;
   final String subtitle;
   final String description;
@@ -17,6 +18,7 @@ class EcosystemModel {
 
   const EcosystemModel({
     required this.id,
+    this.numericId,
     required this.name,
     required this.subtitle,
     required this.description,

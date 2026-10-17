@@ -29,11 +29,14 @@ class AppColors {
   static const Color turquoiseLight = Color(0xFF48CAE4);
   static const Color turquoiseDark = Color(0xFF0077B6);
 
-  // Azul Hielo / Gris Azulado: Páramos, niebla, climas fríos y montañas
+  // Páramo: Niebla, vegetación andina, musgos y rocas opacas
+  static const Color paramoMoss = Color(0xFF4A5D4E);
+  static const Color paramoGrey = Color(0xFF6B705C);
+  static const Color paramoFog = Color(0xFFCFD6D3);
   static const Color iceBlue = Color(0xFFA8DADC);
   static const Color iceBlueLight = Color(0xFFE2F3F5);
-  static const Color bluishGrey = Color(0xFF457B9D);
-  static const Color paramoDark = Color(0xFF1D3557);
+  static const Color bluishGrey = Color(0xFF4A5D4E);
+  static const Color paramoDark = Color(0xFF2E3D32);
 
   // Coral: complementario para el ecosistema oceánico
   static const Color coral = Color(0xFFE76F51);
@@ -68,7 +71,7 @@ class AppColors {
   static const LinearGradient paramoGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFFECEFF1), Color(0xFFCFD8DC), Color(0xFFB0BEC5)],
+    colors: [Color(0xFFE4E9E6), Color(0xFFCCD5D0), Color(0xFFAFBDB5)],
   );
 
   static const LinearGradient oceanGradient = LinearGradient(

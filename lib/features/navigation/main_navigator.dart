@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../ecosystems/domain/models/ecosystem_model.dart';
 import '../ecosystems/presentation/screens/ecosystem_selector_screen.dart';
 import '../exploration/presentation/screens/exploration_route_screen.dart';
+import '../exploration/presentation/controllers/lesson_controller.dart';
 import '../activity/presentation/screens/interactive_activity_screen.dart';
+import '../exploration/domain/models/lesson_node_model.dart';
 import '../profile/presentation/screens/profile_rewards_screen.dart';
-import '../parent_dashboard/presentation/screens/parent_dashboard_screen.dart';
+import '../profile/presentation/controllers/child_profile_controller.dart';
+import '../profile/presentation/screens/level_up_celebration_screen.dart';
+import '../profile/domain/models/avatar_config.dart';
 
 enum ActiveAppScreen {
   ecosystems,
   explorationRoute,
   interactiveActivity,
   profileRewards,
-  parentDashboard,
+  levelUpCelebration,
 }
 
 /// Controlador de navegación interactivo para "Guardianes del Planeta".
-/// Permite tanto el flujo natural de juego gamificado como la selección directa
-/// de las 5 pantallas para revisión y pruebas de UI/UX.
+/// Permite el flujo natural del juego infantil y selector de pantallas para pruebas.
 class MainNavigator extends StatefulWidget {
   const MainNavigator({super.key});
 
@@ -29,38 +33,18 @@ class MainNavigator extends StatefulWidget {
 class _MainNavigatorState extends State<MainNavigator> {
   ActiveAppScreen _currentScreen = ActiveAppScreen.ecosystems;
   EcosystemModel? _selectedEcosystem;
+  LessonNodeModel? _selectedLessonNode;
+
+  void _navigateTo(VoidCallback update) {
+    if (mounted) {
+      setState(update);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Pantalla actual activa con animación de transición fluida
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 350),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.05, 0),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: _buildCurrentScreen(),
-          ),
-
-          // Barra flotante rápida de inspección de pantallas (para pruebas y prototipado)
-          Positioned(
-            bottom: 12,
-            right: 12,
-            child: _buildQuickScreenSwitcher(),
-          ),
-        ],
-      ),
+      body: _buildCurrentScreen(),
     );
   }
 
@@ -69,20 +53,20 @@ class _MainNavigatorState extends State<MainNavigator> {
       case ActiveAppScreen.ecosystems:
         return EcosystemSelectorScreen(
           key: const ValueKey('screen_ecosystems'),
+          initialEcosystemId: _selectedEcosystem?.numericId,
+          initialEcosystemCode: _selectedEcosystem?.id,
+          onEcosystemChanged: (eco) {
+            _selectedEcosystem = eco;
+          },
           onExploreEcosystem: (eco) {
-            setState(() {
+            _navigateTo(() {
               _selectedEcosystem = eco;
               _currentScreen = ActiveAppScreen.explorationRoute;
             });
           },
           onOpenProfile: () {
-            setState(() {
+            _navigateTo(() {
               _currentScreen = ActiveAppScreen.profileRewards;
-            });
-          },
-          onOpenParentDashboard: () {
-            setState(() {
-              _currentScreen = ActiveAppScreen.parentDashboard;
             });
           },
         );
@@ -90,13 +74,15 @@ class _MainNavigatorState extends State<MainNavigator> {
       case ActiveAppScreen.explorationRoute:
         return ExplorationRouteScreen(
           key: const ValueKey('screen_exploration'),
+          ecosystem: _selectedEcosystem,
           onBackToEcosystems: () {
-            setState(() {
+            _navigateTo(() {
               _currentScreen = ActiveAppScreen.ecosystems;
             });
           },
           onStartActivity: (node) {
-            setState(() {
+            _navigateTo(() {
+              _selectedLessonNode = node;
               _currentScreen = ActiveAppScreen.interactiveActivity;
             });
           },
@@ -104,15 +90,24 @@ class _MainNavigatorState extends State<MainNavigator> {
 
       case ActiveAppScreen.interactiveActivity:
         return InteractiveActivityScreen(
-          key: const ValueKey('screen_activity'),
+          key: ValueKey('screen_activity_${_selectedLessonNode?.id ?? "default"}'),
+          ecosystem: _selectedEcosystem,
+          lesson: _selectedLessonNode,
+          lessonId: _selectedLessonNode?.id,
           onClose: () {
-            setState(() {
+            _navigateTo(() {
               _currentScreen = ActiveAppScreen.explorationRoute;
             });
           },
           onActivityComplete: () {
-            setState(() {
-              _currentScreen = ActiveAppScreen.profileRewards;
+            if (_selectedLessonNode != null) {
+              context.read<LessonController>().completeLesson(_selectedLessonNode!.id);
+            }
+            try {
+              context.read<ChildProfileController>().loadProfile(forceRefresh: true);
+            } catch (_) {}
+            _navigateTo(() {
+              _currentScreen = ActiveAppScreen.explorationRoute;
             });
           },
         );
@@ -121,63 +116,37 @@ class _MainNavigatorState extends State<MainNavigator> {
         return ProfileRewardsScreen(
           key: const ValueKey('screen_profile'),
           onBack: () {
-            setState(() {
+            _navigateTo(() {
               _currentScreen = ActiveAppScreen.ecosystems;
             });
           },
         );
 
-      case ActiveAppScreen.parentDashboard:
-        return ParentDashboardScreen(
-          key: const ValueKey('screen_parents'),
-          onBackToChildExperience: () {
-            setState(() {
+      case ActiveAppScreen.levelUpCelebration:
+        ChildProfileController? childProfile;
+        try {
+          childProfile = context.watch<ChildProfileController>();
+        } catch (_) {}
+        final currentLvl = childProfile?.levelNumber ?? 1;
+        final nextLvl = currentLvl < 6 ? currentLvl + 1 : 2;
+
+        return LevelUpCelebrationScreen(
+          key: const ValueKey('screen_level_up'),
+          newLevel: nextLvl,
+          previousLevel: currentLvl,
+          childName: childProfile?.childName ?? 'Explorador',
+          avatarConfig: childProfile?.avatarConfig ?? AvatarConfig.defaultConfig(),
+          onContinue: () {
+            _navigateTo(() {
               _currentScreen = ActiveAppScreen.ecosystems;
+            });
+          },
+          onOpenProfile: () {
+            _navigateTo(() {
+              _currentScreen = ActiveAppScreen.profileRewards;
             });
           },
         );
     }
-  }
-
-  Widget _buildQuickScreenSwitcher() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.darkText.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
-        boxShadow: const [
-          BoxShadow(color: Color(0x33000000), blurRadius: 10, offset: Offset(0, 4)),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _switcherIcon(ActiveAppScreen.ecosystems, Icons.public_rounded, 'Ecosistemas'),
-          _switcherIcon(ActiveAppScreen.explorationRoute, Icons.map_rounded, 'Ruta'),
-          _switcherIcon(ActiveAppScreen.interactiveActivity, Icons.quiz_rounded, 'Actividad'),
-          _switcherIcon(ActiveAppScreen.profileRewards, Icons.emoji_events_rounded, 'Perfil'),
-          _switcherIcon(ActiveAppScreen.parentDashboard, Icons.family_restroom_rounded, 'Padres'),
-        ],
-      ),
-    );
-  }
-
-  Widget _switcherIcon(ActiveAppScreen screen, IconData icon, String tooltip) {
-    final bool isSelected = _currentScreen == screen;
-
-    return IconButton(
-      visualDensity: VisualDensity.compact,
-      tooltip: tooltip,
-      icon: Icon(
-        icon,
-        size: 20,
-        color: isSelected ? AppColors.gold : AppColors.white.withOpacity(0.65),
-      ),
-      onPressed: () {
-        setState(() {
-          _currentScreen = screen;
-        });
-      },
-    );
   }
 }

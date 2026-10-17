@@ -42,11 +42,18 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(AppDimensions.radiusCard)),
         ),
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        hintStyle: TextStyle(
+          color: AppColors.mediumGrey.withOpacity(0.55),
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+        ),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.forestGreen,
           foregroundColor: AppColors.white,
-          minimumSize: const Size(double.infinity, AppDimensions.buttonHeight),
+          minimumSize: const Size(64, AppDimensions.buttonHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
           ),

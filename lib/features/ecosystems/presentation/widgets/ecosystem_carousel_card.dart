@@ -5,6 +5,7 @@ import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../domain/models/ecosystem_model.dart';
+import 'enhanced_isometric_island_painter.dart';
 
 /// Tarjeta de Ecosistema con Isla Flotante Isométrica y bucle de animación suave (3.5s).
 class EcosystemCarouselCard extends StatefulWidget {
@@ -24,9 +25,10 @@ class EcosystemCarouselCard extends StatefulWidget {
 }
 
 class _EcosystemCarouselCardState extends State<EcosystemCarouselCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
+  late AnimationController _elementsAnimController;
 
   @override
   void initState() {
@@ -39,11 +41,17 @@ class _EcosystemCarouselCardState extends State<EcosystemCarouselCard>
     _floatAnimation = Tween<double>(begin: -6.0, end: 6.0).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOutSine),
     );
+
+    _elementsAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _floatController.dispose();
+    _elementsAnimController.dispose();
     super.dispose();
   }
 
@@ -80,7 +88,6 @@ class _EcosystemCarouselCardState extends State<EcosystemCarouselCard>
               ),
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Encabezado de la tarjeta
                 Row(
@@ -89,7 +96,7 @@ class _EcosystemCarouselCardState extends State<EcosystemCarouselCard>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: eco.primaryColor.withOpacity(0.12),
+                        color: eco.primaryColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(AppDimensions.radiusPill),
                       ),
                       child: Row(
@@ -119,7 +126,7 @@ class _EcosystemCarouselCardState extends State<EcosystemCarouselCard>
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppColors.gold.withOpacity(0.2),
+                          color: AppColors.gold.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.star_rounded, size: 18, color: AppColors.goldDark),
@@ -127,60 +134,77 @@ class _EcosystemCarouselCardState extends State<EcosystemCarouselCard>
                   ],
                 ),
 
-                // Representación de Isla Flotante Isométrica
+                const SizedBox(height: 6),
+
+                // Representación de Isla Flotante Isométrica con escala adaptativa
                 Expanded(
                   child: Center(
-                    child: SizedBox(
-                      width: 260,
-                      height: 240,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CustomPaint(
-                            size: const Size(260, 240),
-                            painter: _IsometricIslandPainter(ecosystem: eco),
-                          ),
-                          if (eco.isLocked)
-                            Container(
-                              width: 68,
-                              height: 68,
-                              decoration: BoxDecoration(
-                                color: AppColors.darkText.withOpacity(0.65),
-                                shape: BoxShape.circle,
-                                boxShadow: AppShadows.card,
+                    child: FittedBox(
+                      fit: BoxFit.contain,
+                      child: SizedBox(
+                        width: 275,
+                        height: 250,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CustomPaint(
+                              size: const Size(275, 250),
+                              painter: EnhancedIsometricIslandPainter(
+                                ecosystem: eco,
+                                animation: _elementsAnimController,
                               ),
-                              child: const Icon(Icons.lock_rounded, color: AppColors.white, size: 36),
                             ),
-                        ],
+                            if (eco.isLocked)
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color: AppColors.darkText.withValues(alpha: 0.65),
+                                  shape: BoxShape.circle,
+                                  boxShadow: AppShadows.card,
+                                ),
+                                child: const Icon(Icons.lock_rounded, color: AppColors.white, size: 36),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
 
-                // Textos descriptivos
+                const SizedBox(height: 8),
+
+                // Textos descriptivos unidos y balanceados
                 Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       eco.name,
                       style: AppTypography.displayMedium.copyWith(
                         color: AppColors.darkText,
-                        fontSize: 24,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       eco.subtitle,
                       style: AppTypography.caption.copyWith(
                         color: eco.primaryColor,
                         fontWeight: FontWeight.w800,
+                        fontSize: 13,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       eco.description,
-                      style: AppTypography.bodyMedium.copyWith(fontSize: 13),
+                      style: AppTypography.bodyMedium.copyWith(
+                        fontSize: 12.5,
+                        color: AppColors.darkGrey,
+                        height: 1.25,
+                      ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
