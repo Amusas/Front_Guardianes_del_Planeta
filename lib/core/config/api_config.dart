@@ -8,7 +8,7 @@ class ApiConfig {
 
   static const String host = String.fromEnvironment(
     'API_HOST',
-    defaultValue: '192.168.101.7',
+    defaultValue: '18.116.100.164',
   );
 
   static const String port = String.fromEnvironment(
